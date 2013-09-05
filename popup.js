@@ -8,6 +8,7 @@ jQuery(document).ready(function($){
 				types:{
 					def:{
 						content: 'body',
+						ajax: true,
 						initCallback:null,
 						closeCallback:null,
 						overlay:{
@@ -29,6 +30,7 @@ jQuery(document).ready(function($){
 			
 			$(this).on('click',function(e){
 				
+				var self = this;
 				var href = $(this).attr('href');
 				var type = s.types[$(this).attr('popup')] ? $(this).attr('popup') : 'def';
 				var cs = $.extend(true,s.types.def, s.types[type]);
@@ -36,7 +38,8 @@ jQuery(document).ready(function($){
 				var originalProps = {
 						scroll: { x: $(window).scrollLeft(), y:$(window).scrollTop() },
 						overflow: $('body')[0].style.overflow
-					};	
+					};
+				console.dir(originalProps.scroll.y);
 				
 				$('body').append('<div id="popup"><div class="overlay"></div><div class="close">'+s.text.closePopup+'</div></div>');
 				
@@ -68,6 +71,8 @@ jQuery(document).ready(function($){
 							marginTop:'-'+originalProps.scroll.y+'px'
 						});
 
+				window.scrollTo(0, 0);
+
 				$(popup).append('<div class="loader">'+s.text.loading+'</div>').fadeTo(s.duration, 1, s.easeIn);
 				
 				var loader = $('.loader',popup).css({
@@ -79,29 +84,58 @@ jQuery(document).ready(function($){
 				});
 
 				var content = null;
+				var parent = null;
+				var ind = null;
 				var close = $('.close',popup).hide();
 
-				var ajaxReq = $.get(href, function(data){
-						var temp = $(data).find(cs.content);
-						
-						$(popup).append('<div class="popup-content"></div>');
+				if(cs.ajax)
+					var ajaxReq = $.get(href, function(data){
+							var temp = $(data).find(cs.content);
+							
+							$(popup).append('<div class="popup-content"></div>');
 
-						content = $('.popup-content', popup).css({
-								minHeight:'100%',
-								margin:'100% auto 0',
-								zIndex:2
-							}).fadeTo(0,0).append($(close).show()).append(temp).fadeTo(s.duration, 1, s.easeOut);
+							content = $('.popup-content', popup).css({
+									minHeight:'100%',
+									margin:'100% auto 0',
+									zIndex:2
+								}).fadeTo(0,0).append($(close).show()).append(temp).fadeTo(s.duration, 1, s.easeOut);
 
 
-						if(cs.initCallback) cs.initCallback();
+							if(cs.initCallback) cs.initCallback();
 
-						$(loader).fadeTo(s.duration, 0, s.easeOut, function(){
-								$(this).remove();
-							})
-						$(content).animate({
-								marginTop:'0%'
-							}, s.duration, s.easeOut);
-					});
+							$(loader).fadeTo(s.duration, 0, s.easeOut, function(){
+									$(this).remove();
+								})
+							$(content).animate({
+									marginTop:'0%'
+								}, s.duration, s.easeOut);
+						})
+				else{
+					var temp = $(self).parent().find(cs.content).show();
+					
+					$(popup).append('<div class="popup-content"></div>');
+
+					content = $('.popup-content', popup).css({
+							minHeight:'100%',
+							margin:'100% auto 0',
+							zIndex:2
+						}).fadeTo(0,0).append($(close).show())
+
+					content.p = temp.parent();
+					content.i = temp.index();
+
+					content.append(temp).fadeTo(s.duration, 1, s.easeOut);
+
+					if(cs.initCallback) cs.initCallback();
+
+					$(loader).fadeTo(s.duration, 0, s.easeOut, function(){
+							$(this).remove();
+						})
+					$(content).animate({
+							marginTop:'0%'
+						}, s.duration, s.easeOut);
+				};
+
 
 				$(overlay).add(close).on('click',function(e){
 						$(overlay).add(close).off('click');
@@ -128,6 +162,13 @@ jQuery(document).ready(function($){
 							}, s.duration, s.easeIn);
 							
 						$(popup).fadeTo(s.duration, 0, s.easeIn, function(){
+								if(!cs.ajax){
+									if(content.i==0)
+										$(content.p).prepend($(content.children(cs.content)))
+									else
+										$(content.p).children().eq(content.i-1).after($(content.children(cs.content).hide()));
+								}
+								$(overlay).add(close).off('click');
 								$(this).remove();
 							});
 					});
