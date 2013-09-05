@@ -39,7 +39,6 @@ jQuery(document).ready(function($){
 						scroll: { x: $(window).scrollLeft(), y:$(window).scrollTop() },
 						overflow: $('body')[0].style.overflow
 					};
-				console.dir(originalProps.scroll.y);
 				
 				$('body').append('<div id="popup"><div class="overlay"></div><div class="close">'+s.text.closePopup+'</div></div>');
 				
@@ -111,7 +110,7 @@ jQuery(document).ready(function($){
 								}, s.duration, s.easeOut);
 						})
 				else{
-					var temp = $(self).parent().find(cs.content).show();
+					var temp = $(self).parent().find(cs.content).length>0 ? $(self).parent().find(cs.content).show() : $(cs.content).show();
 					
 					$(popup).append('<div class="popup-content"></div>');
 
