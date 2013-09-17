@@ -1,0 +1,19 @@
+#popup section {
+  width: 680px;
+  padding: 15px 15px 20px;
+  background: white;
+  float: none;
+  margin: 50px auto;
+  position: relative; 
+  }
+#popup .close {
+  background: white;
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  cursor: pointer;
+  z-index: 22;
+  text-indent: -9999px; 
+}

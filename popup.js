@@ -142,14 +142,14 @@ jQuery(document).ready(function($){
 
 						if(cs.closeCallback) cs.closeCallback();
 
-						$('body')[0].style.height = null;
+						$('body')[0].style.height = '';
 						
-						$('body')[0].style.overflow = null;
+						$('body')[0].style.overflow = '';
 						
 
 						$('body').css({
-								overflow:'originalProps.overflow',
-								height:null
+								overflow:originalProps.overflow,
+								height:''
 							});
 
 						$(freezed).children().first().unwrap();
