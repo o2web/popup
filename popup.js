@@ -147,7 +147,6 @@ jQuery(document).ready(function($){
 							$(popup).append('<div class="popup-content white"></div>');
 
 							content = $('.popup-content', popup).css({
-									position:'relative',
 									zIndex:3
 								}).fadeTo(0,0).append($(close).show()).append(csContent).fadeTo(o.s.duration, 1, o.s.easeOut);
 							if(cs.slide) $(content)[0]['style'][transform] = CSStranslate.start+'(0px,-1000px'+CSStranslate.end+')';

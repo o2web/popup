@@ -1,8 +1,6 @@
-#popup section {
+#popup .section-content {
   width: 680px;
-  padding: 15px 15px 20px;
   background: white;
-  float: none;
   margin: 50px auto;
   position: relative; 
   }
