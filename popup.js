@@ -1,55 +1,104 @@
 jQuery(document).ready(function($){
 
+	var prefix = (function () {
+	  var styles = window.getComputedStyle(document.documentElement, ''),
+	    pre = (Array.prototype.slice
+	      .call(styles)
+	      .join('') 
+	      .match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
+	    )[1],
+	    dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1];
+	  return {
+	    dom: dom,
+	    lowercase: pre,
+	    css: '-' + pre + '-',
+	    js: (pre[0].toUpperCase() + pre.substr(1)).toLowerCase()
+	  };
+	})();
+
+	var has3D = (function () {
+	   var supportedPrefix,
+	      supports3d = false,
+	      prefixes = [ "Webkit", "Moz", "ms", "O" ],
+	      div = document.createElement("div");
+	    if ( div.style.perspective !== undefined ) {
+	        supportedPrefix = "";
+	        supports3d = true;
+	    }else {
+	        for ( var i = 0; i < prefixes.length; ++i ) {
+	            if((prefixes[i] + "Perspective") in div.style) {
+	                supports3d = true;
+	                supportedPrefix = prefixes[i];
+	                break;
+	            }
+	        }
+	    }
+	    return supports3d;
+	})();
+
+	var transition = prefix.js+'Transition';
+	var transform = prefix.js+'Transform';
+	var CSStransform = prefix.css+'transform';
+	var CSStransition = prefix.css+'transition';
+	var CSStranslate = {start:'translate'+(has3D?'3d':''), end: (has3D?', 0':'')};
+
 	$.extend($.fn, {
 		
 		popup:function(args) {
-
-			var s = $.extend(true,{
-				types:{
-					def:{
-						content: 'body',
-						ajax: true,
-						initCallback:null,
-						closeCallback:null,
-						overlay:{
-							color:'#000',
-							image:null,
-							opacity:0.8
+			var triggers = $(this);
+			triggers.each(function(){
+				var o = $(this)[0]?$(this)[0]:this;
+				o.s = {};
+				$.extend(o.s,$.extend(true,{
+					types:{
+						def:{
+							content: 'body',
+							ajax: true,
+							initCallback:null,
+							closeCallback:null,
+							overlay:{
+								color:'#000',
+								image:null,
+								opacity:0.8
+							},
+							slide:true
 						}
+					},
+					zIndex:25,
+					duration:500,
+					easeIn:'swing',
+					easeOut:'swing',
+					cssEaseIn:'cubic-bezier(0.65, 0, 0.75, 0.4)',
+					cssEaseOut:'cubic-bezier(0.275, 0.895, 0.51, 1)',
+					text:{
+						loading:'Loading...',
+						closePopup:'Close'
 					}
-				},
-				zIndex:25,
-				duration:500,
-				easeIn:'swing',
-				easeOut:'swing',
-				text:{
-					loading:'Loading...',
-					closePopup:'Close'
-				}
-			}, args);	
+				}, args));
+			});
 			
 			$(this).on('click',function(e){
 				
-				var self = this;
+				var o = $(this)[0]?$(this)[0]:this;
 				var href = $(this).attr('href');
-				var type = s.types[$(this).attr('popup')] ? $(this).attr('popup') : 'def';
-				var cs = $.extend(true,s.types.def, s.types[type]);
+				var type = o.s.types[$(this).attr('popup')] ? $(this).attr('popup') : 'def';
+				var cs = $.extend(true,o.s.types.def, o.s.types[type]);
 
 				var originalProps = {
 						scroll: { x: $(window).scrollLeft(), y:$(window).scrollTop() },
 						overflow: $('body')[0].style.overflow
 					};
 				
-				$('body').append('<div id="popup"><div class="overlay"></div><div class="close">'+s.text.closePopup+'</div></div>');
+				$('body').append('<div id="popup"><div class="overlay"></div><div class="close">'+o.s.text.closePopup+'</div></div>');
 				
-				var popup = $('#popup').fadeTo(0,0).css({
+				var popup = $('#popup').addClass(type).fadeTo(0,0).css({
 						position:'fixed',
 						top:0,
 						bottom:0,
 						left:0,
 						right:0,
-						overflow:'auto',
-						zIndex: s.zIndex
+						overflow:'hidden',
+						zIndex: o.s.zIndex
 					});
 				var overlay = $('.overlay', popup).css({
 						position:'fixed',
@@ -72,7 +121,7 @@ jQuery(document).ready(function($){
 
 				window.scrollTo(0, 0);
 
-				$(popup).append('<div class="loader">'+s.text.loading+'</div>').fadeTo(s.duration, 1, s.easeIn);
+				$(popup).append('<div class="loader">'+o.s.text.loading+'</div>').fadeTo(o.s.duration, 1, o.s.easing);
 				
 				var loader = $('.loader',popup).css({
 						position:'absolute',
@@ -83,93 +132,146 @@ jQuery(document).ready(function($){
 				});
 
 				var content = null;
+				var csContent;
+				var backInPlace = false;
 				var parent = null;
 				var ind = null;
-				var close = $('.close',popup).hide();
+				var close = $('.close',popup).css({
+						zIndex:2
+					}).hide();
 
 				if(cs.ajax)
 					var ajaxReq = $.get(href, function(data){
-							var temp = $(data).find(cs.content);
+							csContent = $(data).find(cs.content);
 							
-							$(popup).append('<div class="popup-content"></div>');
+							$(popup).append('<div class="popup-content white"></div>');
 
 							content = $('.popup-content', popup).css({
-									minHeight:'100%',
-									margin:'100% auto 0',
-									zIndex:2
-								}).fadeTo(0,0).append($(close).show()).append(temp).fadeTo(s.duration, 1, s.easeOut);
+									position:'relative',
+									zIndex:3
+								}).fadeTo(0,0).append($(close).show()).append(csContent).fadeTo(o.s.duration, 1, o.s.easeOut);
+							if(cs.slide) $(content)[0]['style'][transform] = CSStranslate.start+'(0px,-1000px'+CSStranslate.end+')';
 
+							if(cs.initCallback) cs.initCallback(o);
 
-							if(cs.initCallback) cs.initCallback();
-
-							$(loader).fadeTo(s.duration, 0, s.easeOut, function(){
+							$(loader).fadeTo(o.s.duration, 0, o.s.easeOut, function(){
 									$(this).remove();
 								})
-							$(content).animate({
-									marginTop:'0%'
-								}, s.duration, s.easeOut);
-						})
+							if(cs.slide){
+								$(content).css(CSStransition,('all '+(o.s.duration+100)+'ms '+o.s.cssEaseOut));
+								$(content)[0]['style'][transform] = CSStranslate.start+'(0px,0px'+CSStranslate.end+')';
+								setTimeout(function(){
+									$(content).css(CSStransition,'');
+									$(content)[0]['style'][transform]='';
+									
+								},(o.s.duration+100));
+							}else{
+								$(popup).css('overflow','auto');
+							}
+							
+						});
 				else{
-					var temp = $(self).parent().find(cs.content).length>0 ? $(self).parent().find(cs.content).show() : $(cs.content).show();
 					
-					$(popup).append('<div class="popup-content"></div>');
-
+					switch(typeof(cs.content)) {
+					    case 'string':
+					      csContent = $(cs.content);
+					      backInPlace = true;
+					      break;
+					    case 'object':
+					    	if(cs.content.attr) csContent = $(o).attr(cs.content.attr);
+					        if(cs.content.sibling){
+					        	csContent = $($(o).siblings(cs.content.sibling+''));
+					        	backInPlace = true;
+					        };
+					        break;
+					 }
+					$(popup).append('<div class="popup-content white"></div>');
+					$(popup).css('overflow','hidden');
+					
 					content = $('.popup-content', popup).css({
-							minHeight:'100%',
-							margin:'100% auto 0',
-							zIndex:2
-						}).fadeTo(0,0).append($(close).show())
+							position:'relative',
+							zIndex:3
+						}).fadeTo(0,0).append($(close).show());
 
-					content.p = temp.parent();
-					content.i = temp.index();
+					if(backInPlace){
+						content.p = csContent.parent();
+						content.i = csContent.index();
+					}
+					if(cs.slide) $(content)[0]['style'][transform] = CSStranslate.start+'(0px, -1000px'+CSStranslate.end+')';
+					content.append($(csContent).show()).fadeTo(o.s.duration, 1, o.s.easeOut);
+					
 
-					content.append(temp).fadeTo(s.duration, 1, s.easeOut);
-
-					if(cs.initCallback) cs.initCallback();
-
-					$(loader).fadeTo(s.duration, 0, s.easeOut, function(){
+					$(loader).fadeTo(o.s.duration, 0, o.s.easeOut, function(){
 							$(this).remove();
 						})
-					$(content).animate({
-							marginTop:'0%'
-						}, s.duration, s.easeOut);
+					if(cs.slide){
+						$(content).css(CSStransition,('all '+(o.s.duration+100)+'ms '+o.s.cssEaseOut));
+						$(content)[0]['style'][transform] = CSStranslate.start+'(0px,0px'+CSStranslate.end+')';
+						setTimeout(function(){
+							$(content).css(CSStransition,'');
+							$(content)[0]['style'][transform]='';
+							$(popup).css('overflow','auto');
+							if(cs.initCallback) cs.initCallback(o);
+						},(o.s.duration+100));
+					}else{
+						$(popup).css('overflow','auto');
+						if(cs.initCallback) cs.initCallback(o);
+					}
 				};
 
 
 				$(overlay).add(close).on('click',function(e){
+			
 						$(overlay).add(close).off('click');
 						if(ajaxReq) ajaxReq.abort();
+						if(cs.slide) $(content)[0]['style'][transform] = CSStranslate.start+'(0px,0px'+CSStranslate.end+')';
+						if(cs.closeCallback) cs.closeCallback(o);
 
-						if(cs.closeCallback) cs.closeCallback();
-
-						$('body')[0].style.height = '';
+						$('body')[0].style.height = null;
 						
-						$('body')[0].style.overflow = '';
-						
+						$('body')[0].style.overflow = null;
 
 						$('body').css({
-								overflow:originalProps.overflow,
-								height:''
+								overflow:'originalProps.overflow',
+								height:null
 							});
 
 						$(freezed).children().first().unwrap();
 
 						window.scrollTo(originalProps.scroll.x, originalProps.scroll.y);
-
-						if(content) $(content).animate({
-								marginTop:'-100%'
-							}, s.duration, s.easeIn);
+						if(content){
+							if(cs.slide){
+								$(popup).css('overflow','hidden').fadeTo(o.s.duration, 0, o.s.easing);
+								$(content).css(CSStransition,('all '+(o.s.duration+100)+'ms '+o.s.cssEaseIn));
+								$(content)[0]['style'][transform] = CSStranslate.start+'(0px,-1000px'+CSStranslate.end+')';
+								setTimeout(function(){
+									$(content).css(CSStransition,'');
+									$(content)[0]['style'][transform]='';
+									if(!cs.ajax && backInPlace){
+										if(content.i==0)
+											$(content.p).prepend($(csContent))
+										else
+											$(content.p).children().eq(content.i-1).after($(csContent.hide()));
+									}
 							
-						$(popup).fadeTo(s.duration, 0, s.easeIn, function(){
-								if(!cs.ajax){
-									if(content.i==0)
-										$(content.p).prepend($(content.children(cs.content)))
-									else
-										$(content.p).children().eq(content.i-1).after($(content.children(cs.content).hide()));
-								}
-								$(overlay).add(close).off('click');
-								$(this).remove();
-							});
+									$(overlay).add(close).off('click');
+									$(popup).remove();
+								},(o.s.duration+100));
+							}else{
+								$(popup).css('overflow','hidden').fadeTo(o.s.duration, 0, o.s.easing,function(){
+										if(!cs.ajax && backInPlace){
+										if(content.i==0)
+											$(content.p).prepend($(csContent))
+										else
+											$(content.p).children().eq(content.i-1).after($(csContent.hide()));
+									}
+							
+									$(overlay).add(close).off('click');
+									$(popup).remove();
+									});
+								
+							}	
+						}
 					});
 
 
