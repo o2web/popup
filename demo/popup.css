@@ -1,0 +1,18 @@
+#popup .popup-content {
+  width: 620px;
+  background: #fff;
+  margin: 50px auto;
+  position: relative; 
+  padding:30px;
+  }
+#popup .close {
+  background: white;
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  cursor: pointer;
+  z-index: 22;
+  text-indent: -9999px; 
+}

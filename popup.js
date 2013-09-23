@@ -1,46 +1,57 @@
-jQuery(document).ready(function($){
-
-	var prefix = (function () {
-	  var styles = window.getComputedStyle(document.documentElement, ''),
-	    pre = (Array.prototype.slice
-	      .call(styles)
-	      .join('') 
-	      .match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
-	    )[1],
-	    dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1];
-	  return {
-	    dom: dom,
-	    lowercase: pre,
-	    css: '-' + pre + '-',
-	    js: (pre[0].toUpperCase() + pre.substr(1)).toLowerCase()
-	  };
+(function($) {
+	var isIE = (function(){
+		var rv = -1; // Return value assumes failure.
+		if (navigator.appName == 'Microsoft Internet Explorer') {
+			var ua = navigator.userAgent;
+			var re = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
+			if (re.exec(ua) != null)
+				rv = parseFloat(RegExp.$1);
+		}
+		return (rv != -1 && rv < 10)? rv : false;
 	})();
 
-	var has3D = (function () {
-	   var supportedPrefix,
-	      supports3d = false,
-	      prefixes = [ "Webkit", "Moz", "ms", "O" ],
-	      div = document.createElement("div");
-	    if ( div.style.perspective !== undefined ) {
-	        supportedPrefix = "";
-	        supports3d = true;
-	    }else {
-	        for ( var i = 0; i < prefixes.length; ++i ) {
-	            if((prefixes[i] + "Perspective") in div.style) {
-	                supports3d = true;
-	                supportedPrefix = prefixes[i];
-	                break;
-	            }
-	        }
-	    }
-	    return supports3d;
-	})();
+	if(!isIE || isIE>8){
+		var prefix = (function () {
+		  var styles = window.getComputedStyle(document.documentElement, ''),
+		    pre = (Array.prototype.slice
+		      .call(styles)
+		      .join('') 
+		      .match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
+		    )[1],
+		    dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1];
+		  return {
+		    dom: dom,
+		    lowercase: pre,
+		    css: '-' + pre + '-',
+		    js: (pre[0].toUpperCase() + pre.substr(1)).toLowerCase()
+		  };
+		})();
 
-	var transition = prefix.js+'Transition';
-	var transform = prefix.js+'Transform';
-	var CSStransform = prefix.css+'transform';
-	var CSStransition = prefix.css+'transition';
-	var CSStranslate = {start:'translate'+(has3D?'3d':''), end: (has3D?', 0':'')};
+		var has3D = (function () {
+		   var supportedPrefix,
+		      supports3d = false,
+		      prefixes = [ "Webkit", "Moz", "ms", "O" ],
+		      div = document.createElement("div");
+		    if ( div.style.perspective !== undefined ) {
+		        supportedPrefix = "";
+		        supports3d = true;
+		    }else {
+		        for ( var i = 0; i < prefixes.length; ++i ) {
+		            if((prefixes[i] + "Perspective") in div.style) {
+		                supports3d = true;
+		                supportedPrefix = prefixes[i];
+		                break;
+		            }
+		        }
+		    }
+		    return supports3d;
+		})();
+		var transition = prefix.js+'Transition';
+		var transform = prefix.js+'Transform';
+		var CSStransform = prefix.css+'transform';
+		var CSStransition = prefix.css+'transition';
+		var CSStranslate = {start:'translate'+(has3D?'3d':''), end: (has3D?', 0':'')};
+	}
 
 	$.extend($.fn, {
 		
@@ -61,7 +72,7 @@ jQuery(document).ready(function($){
 								image:null,
 								opacity:0.8
 							},
-							slide:true
+							css3:(!isIE || isIE>8)
 						}
 					},
 					zIndex:25,
@@ -142,21 +153,21 @@ jQuery(document).ready(function($){
 
 				if(cs.ajax)
 					var ajaxReq = $.get(href, function(data){
-							csContent = $(data).find(cs.content);
-							
+							csContent = $(data).find(cs.content).length>0?$(data).find(cs.content):$(data);
+
 							$(popup).append('<div class="popup-content white"></div>');
 
 							content = $('.popup-content', popup).css({
 									zIndex:3
 								}).fadeTo(0,0).append($(close).show()).append(csContent).fadeTo(o.s.duration, 1, o.s.easeOut);
-							if(cs.slide) $(content)[0]['style'][transform] = CSStranslate.start+'(0px,-1000px'+CSStranslate.end+')';
+							if(cs.css3) $(content)[0]['style'][transform] = CSStranslate.start+'(0px,-1000px'+CSStranslate.end+')';
 
 							if(cs.initCallback) cs.initCallback(o);
 
 							$(loader).fadeTo(o.s.duration, 0, o.s.easeOut, function(){
 									$(this).remove();
 								})
-							if(cs.slide){
+							if(cs.css3){
 								$(content).css(CSStransition,('all '+(o.s.duration+100)+'ms '+o.s.cssEaseOut));
 								$(content)[0]['style'][transform] = CSStranslate.start+'(0px,0px'+CSStranslate.end+')';
 								setTimeout(function(){
@@ -194,16 +205,17 @@ jQuery(document).ready(function($){
 
 					if(backInPlace){
 						content.p = csContent.parent();
+						if(content.p.is('.freezed')) content.p = $('body');
 						content.i = csContent.index();
 					}
-					if(cs.slide) $(content)[0]['style'][transform] = CSStranslate.start+'(0px, -1000px'+CSStranslate.end+')';
+					if(cs.css3) $(content)[0]['style'][transform] = CSStranslate.start+'(0px, -1000px'+CSStranslate.end+')';
 					content.append($(csContent).show()).fadeTo(o.s.duration, 1, o.s.easeOut);
 					
 
 					$(loader).fadeTo(o.s.duration, 0, o.s.easeOut, function(){
 							$(this).remove();
 						})
-					if(cs.slide){
+					if(cs.css3){
 						$(content).css(CSStransition,('all '+(o.s.duration+100)+'ms '+o.s.cssEaseOut));
 						$(content)[0]['style'][transform] = CSStranslate.start+'(0px,0px'+CSStranslate.end+')';
 						setTimeout(function(){
@@ -220,26 +232,27 @@ jQuery(document).ready(function($){
 
 
 				$(overlay).add(close).on('click',function(e){
-			
+						if(!content) return;
 						$(overlay).add(close).off('click');
 						if(ajaxReq) ajaxReq.abort();
-						if(cs.slide) $(content)[0]['style'][transform] = CSStranslate.start+'(0px,0px'+CSStranslate.end+')';
+						if(cs.css3) $(content)[0]['style'][transform] = CSStranslate.start+'(0px,0px'+CSStranslate.end+')';
 						if(cs.closeCallback) cs.closeCallback(o);
 
-						$('body')[0].style.height = null;
+						$('body')[0].style.height = '';
 						
-						$('body')[0].style.overflow = null;
+						$('body')[0].style.overflow = '';
 
 						$('body').css({
 								overflow:'originalProps.overflow',
-								height:null
+								height:''
 							});
 
 						$(freezed).children().first().unwrap();
 
 						window.scrollTo(originalProps.scroll.x, originalProps.scroll.y);
+						
 						if(content){
-							if(cs.slide){
+							if(cs.css3){
 								$(popup).css('overflow','hidden').fadeTo(o.s.duration, 0, o.s.easing);
 								$(content).css(CSStransition,('all '+(o.s.duration+100)+'ms '+o.s.cssEaseIn));
 								$(content)[0]['style'][transform] = CSStranslate.start+'(0px,-1000px'+CSStranslate.end+')';
@@ -258,7 +271,8 @@ jQuery(document).ready(function($){
 								},(o.s.duration+100));
 							}else{
 								$(popup).css('overflow','hidden').fadeTo(o.s.duration, 0, o.s.easing,function(){
-										if(!cs.ajax && backInPlace){
+									if(!cs.ajax && backInPlace){
+										console.log('backinplace');
 										if(content.i==0)
 											$(content.p).prepend($(csContent))
 										else
@@ -279,8 +293,6 @@ jQuery(document).ready(function($){
 				return false;
 			})
 
-		}
-				
+		}			
 	});
-
-});
+})(jQuery);
