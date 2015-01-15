@@ -16,6 +16,7 @@
       items: [],
       scrolled: 0,
       req: undefined,
+      historyEnabled: window.history.length != undefined,
       current: {},
       //
       $page: $('body'),
@@ -66,13 +67,20 @@
     //
     // ACTIONS
 
+    function popHistory(e){
+      window.onpopstate = undefined;
+      popup.popped = true;
+      closePopup();
+    }
+
+
     function buildPopup($el){
       var settings = $el[0].popup;
       popup.current.$loader = settings.loader ? settings.loader : popup.$loader;
       popup.current.$closeButton = settings.closeButton ? settings.closeButton : popup.$closeButton;
       popup.current.messages = $.extend(true, popup.messages, settings.messages);
 
-      popup.current.$loader.html(popup.current.messages);
+      popup.current.$loader.html(popup.current.messages.loading);
       popup.current.$closeButton.html(popup.current.messages.close);
       popup.current.$closeButton.on('click', closePopup);
 
@@ -80,6 +88,7 @@
       popup.$popup.append(popup.current.$closeButton);
 
       popup.$page.append(popup.$popup);
+
       
     }
 
@@ -134,7 +143,10 @@
         success: function(data){
           popup.req = undefined;
           popup.current.$loader.remove();
-          popup.$popup.append(data);
+          popup.current.$data = $(data);
+          popup.$popup.append(popup.current.$data);
+          popup.current.$data.on('click', cancelEvent);
+          popup.$popup.on('click', closePopup);
         },
         error: function(data){
           popup.req = undefined;
@@ -165,7 +177,13 @@
       var $el = $(this);
       var settings = $el[0].popup;
       popup.current.$trigger = $el;
+      popup.current.settings = settings;
       if(typeof settings.beforeInit == 'function') settings.beforeInit(settings);
+
+      if(popup.historyEnabled){
+        window.history.pushState({}, 'popup', '#!/detail');
+        window.onpopstate = popHistory;
+      }
 
       freezePage($el);
       parseType($el);
@@ -181,13 +199,21 @@
     //
     // CLOSE POPUP
     function closePopup(e){
-      var $el = $(this);
-      var settings = popup.current.$trigger[0].popup;
+      var $el = popup.current.$trigger;
+      var settings = popup.current.settings;
       if(popup.req) popup.req.abort();
 
       if(typeof settings.beforeClose == 'function') settings.beforeClose(settings);
 
       unfreezePage($el);
+
+      if(popup.historyEnabled && !popup.popped){
+        window.onpopstate = undefined;
+        popup.popped = undefined;
+        window.history.go(-1);
+      }
+
+      popup.$popup.off('click', closePopup);
 
       if(typeof settings.afterClose == 'function') settings.afterClose(settings);
 
