@@ -10,7 +10,7 @@
     //
     //
     // VARIABLES
-    
+
     window.popup = {
       //
       items: [],
@@ -62,6 +62,9 @@
       e.preventDefault();
       return false;
     }
+    function stopEvent(e){
+      e.stopPropagation();
+    }
 
     //
     //
@@ -89,7 +92,7 @@
 
       popup.$page.append(popup.$popup);
 
-      
+
     }
 
     function removePopup($el){
@@ -101,7 +104,7 @@
     function freezePage($el){
       // cancel scroll event
       $win.on('scroll', cancelEvent);
-      
+
       // get page content
       $children = popup.$page.children();
 
@@ -113,7 +116,7 @@
 
       // build popup
       buildPopup($el);
-  
+
     }
 
 
@@ -145,7 +148,7 @@
           popup.current.$loader.remove();
           popup.current.$data = $(data);
           popup.$popup.append(popup.current.$data);
-          popup.current.$data.on('click', cancelEvent);
+          popup.current.$data.on('click', stopEvent);
           popup.$popup.on('click', closePopup);
         },
         error: function(data){
@@ -226,7 +229,7 @@
     //
     // PARSE METHODS
     function parseMethods(arg, options){
-     
+
     }
 
 
@@ -258,11 +261,11 @@
 
         };
         $.extend(settings, args);
-        var type = $el.attr('popup'); 
+        var type = $el.attr('popup');
         if(typeof type != 'undefined' && !!type) settings.type = type;
         if($el[0].popup) $el[0].popup = settings
         else $el[0].popup = $.extend($el[0].popup, settings);
-      
+
         window.popup.items.push($el[0]);
       }
 
